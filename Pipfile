@@ -1,0 +1,20 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pylint = "*"
+autopep8 = "*"
+
+[packages]
+awsiotsdk = "==1.5.2"
+spidev = "*"
+smbus2 = "*"
+construct = "*"
+colorlog = "*"
+commentjson = "*"
+pypubsub = "*"
+
+[requires]
+python_version = "3.9"
