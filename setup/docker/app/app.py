@@ -3,6 +3,7 @@ import threading
 import subprocess
 from listenerBackend import listener
 app = Flask(__name__)
+test = True
 
 @app.route("/")
 def index():
@@ -38,6 +39,8 @@ if __name__ == "__main__":
     listen_thread.start() # start the listening backend. Could do a fork, but either one seems to work.
     if(test):
         #create a dummy process to test socket communication
+        process = Popen(['python3','testSockets.py'])
+
 
     
     app.run(debug=False, host='0.0.0.0') # start the flask frontend
