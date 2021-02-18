@@ -1,1 +1,1 @@
-$ docker build -t docker-flask:latest .
+docker build -t docker-flask:latest .
