@@ -5,6 +5,7 @@ import subprocess
 import socket
 import os
 from listenerBackend import listener
+from imageFaceDetection import frame_to_faceprint
 
 UPLOAD_DIR = '/app/images'
 ALLOWED_EXTENSIONS = {'png','jpg','jpeg','gif'}
@@ -41,7 +42,7 @@ def allProfiles():
     
     """
 
-#untested login file upload.
+#working image upload
 @app.route("/login",methods=['GET','POST'])
 def login_preimage():
     if request.method == 'POST':
@@ -66,14 +67,11 @@ def login_preimage():
     """
 
 #this is where the user should be able to see their timeline if the image is already processed. 
-#This is currently working NEED TO ASK JULIAN HOW TO GET FINGERPRINT FROM IMAGE
+#This is currently working NEED TO ASK JULIAN HOW TO GET FINGERPRINT FROM IMAGE - done
 @app.route("/login/<filename>")
 def login_postimage(filename):
+     
     return send_from_directory(app.config['UPLOAD_DIR'],filename)
-
-def socketSender():
-    #just sends information on a python socket
-    sendsocket = socket()
 
 if __name__ == "__main__":
     listen_thread = threading.Thread(target = listener)

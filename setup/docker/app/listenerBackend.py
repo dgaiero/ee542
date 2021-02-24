@@ -2,7 +2,7 @@ import socket
 import multiprocessing
 
 def listener():
-    #this is what will listen over a socket
+    #this is what will listen over a socket and the give the ready signal??
     host = socket.gethostname()
     port = 51234
     s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)

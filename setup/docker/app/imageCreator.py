@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 from multiprocessing import Process
 import os
 
+outbox = "/app/visuals"
 
 def createHistogram(data, endLocation,identifier):
     #data 
@@ -12,6 +13,6 @@ def createHistogram(data, endLocation,identifier):
     ply.ylabel('Temperature',fontsize=15)
     plt.plot(data[0],data[1])
     #save the created plot
-    plt.savefig(endLocation,bbox_inches='tight')
+    plt.savefig(outbox,bbox_inches='tight')
 
-def 
+
