@@ -6,6 +6,8 @@ import socket
 import os
 from listenerBackend import listener
 from imageFaceDetection import frame_to_faceprint
+#not sure if this is what we need...
+from camera import VideoCamera
 
 UPLOAD_DIR = '/app/images'
 ALLOWED_EXTENSIONS = {'png','jpg','jpeg','gif'}
@@ -32,9 +34,24 @@ def index():
     <li><a href="/profiles">Profiles Page</a></li>
     <li><a href="/login">Login Page</a> (which will end up being the only page viewable)</li>
     </ul>
+    <h1>Video Stream</h1>
+    <img id="bg" src="{{ url_for('video_feed') }}">
 
   </div>
   """
+
+def gen(camera):
+    while True:
+        #get camera frame
+        frame = camera.get_frame()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+
+@app.route('/video_feed')
+def video_feed():
+    return Response(gen(VideoCamera()),
+                    mimetype='multipart/x-mixed-replace; boundary=frame'
+
 @app.route("/profiles")
 def allProfiles():
     return """
