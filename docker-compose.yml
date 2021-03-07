@@ -1,0 +1,59 @@
+  
+version: "3.7"
+
+########################### NETWORKS
+# Create frfts_net network
+# docker network create frfts_net
+# Alternatively, you can specify the gateway and subnet to use
+# docker network create --gateway 192.168.15.1 --subnet 192.168.15.0/24 frfts_net
+networks:
+  frfts_net:
+    external:
+      name: frfts_net
+  default:
+    driver: bridge
+
+########################### SERVICES
+
+services:
+  # frfts-backend:
+  #   container_name: frfts-backend
+  #   build:
+  #     context: $DOCKERDIR/setup/docker/
+  #     dockerfile: Dockerfile
+  #     args:
+  #       SSH_PRIVATE_KEY: $DEPLOY_KEY
+  #   # ports:
+  #   #   - "12345:12345"
+  #   restart: unless-stopped
+  #   # depends_on:
+  #   #   - ska-db
+  #   #   - mail
+  #   environment:
+  #     - FRFTS_LOGLEVEL=DEBUG
+  #   volumes:
+  #     - $DOCKERDIR/backend/logs/:/opt/runner/logs/
+  #     - $DOCKERDIR/backend/src/test_config.jsonc:/opt/runner/config.jsonc:ro
+  #   networks:
+  #     - frfts_net
+
+  # MariaDB - MySQL Database
+  mariadb:
+    container_name: mariadb
+    image: linuxserver/mariadb:latest
+    restart: always
+    networks:
+      - frfts_net
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "3306:3306"
+    volumes:
+      - $DOCKERDIR/database:/config
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
+      - MYSQL_DATABASE=$MYSQL_DATABASE
+      - MYSQL_USER=$MYSQL_USER
+      - MYSQL_PASSWORD=$MYSQL_PASSWORD
