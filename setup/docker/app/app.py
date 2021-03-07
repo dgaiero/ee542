@@ -1,10 +1,9 @@
-from flask import Flask,flash, request, redirect, url_for, send_from_directory
+from flask import Flask,flash, request, redirect, url_for, send_from_directory,Response,render_template
 from werkzeug.utils import secure_filename
 import threading
 import subprocess
 import socket
 import os
-from listenerBackend import listener
 from imageFaceDetection import frame_to_faceprint
 #not sure if this is what we need...
 from camera import VideoCamera
@@ -24,20 +23,7 @@ def allowed_file(filename):
 
 @app.route("/")
 def index():
-  return """
-  <h1>FRFTS</h1>
-  <p>Facial Recognition Forehead Temperature Sensor</p>
-  <div> 
-  <h2>Important Links:</h2>
-    <ul>
-    <li><a href="/profiles">Profiles Page</a></li>
-    <li><a href="/login">Login Page</a> (which will end up being the only page viewable)</li>
-    </ul>
-    <h1>Video Stream</h1>
-    <img id="bg" src="{{ url_for('video_feed') }}">
-
-  </div>
-  """
+  return render_template('index.html')
 
 def gen(camera):
     while True:
@@ -49,7 +35,7 @@ def gen(camera):
 @app.route('/video_feed')
 def video_feed():
     return Response(gen(VideoCamera()),
-                    mimetype='multipart/x-mixed-replace; boundary=frame'
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route("/profiles")
 def allProfiles():
@@ -93,8 +79,5 @@ def login_postimage(filename):
     return send_from_directory(app.config['UPLOAD_DIR'],filename)
 
 if __name__ == "__main__":
-    listen_thread = threading.Thread(target = listener)
-    listen_thread.start() # start the listening backend. Could do a fork, but either one seems to work.
-
     
     app.run(debug=False, host='0.0.0.0') # start the flask frontend
