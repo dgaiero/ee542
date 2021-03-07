@@ -3,11 +3,12 @@ import json
 
 class MasterObject:
     types = {"face_print":[],"forehead_coordinate":[],"temperature":-1,"frame":None,"time":-1}
-    def __init__(self):
-        for t in types.keys():
-            self.eval(t) = None
-    def __init__(self):
-        return
+    def __init__(self,face_print,forehead,temp,frame,time,id_in):
+        self.face_print = face_print
+        self.forehead = forehead
+        self.temp = temp
+        self.time = time
+        self.id = id_in
     def toJSON(self):
         dicts = {}
         for t in types.keys():

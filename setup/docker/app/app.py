@@ -86,7 +86,10 @@ def login_preimage():
 #This is currently working NEED TO ASK JULIAN HOW TO GET FINGERPRINT FROM IMAGE - done
 @app.route("/login/<filename>")
 def login_postimage(filename):
-     
+    #first get fingerprint from image filename
+    #then get the entry in the mysql table
+    #then we need to call something to create the image timeline
+    #then we need to display the image timeline
     return send_from_directory(app.config['UPLOAD_DIR'],filename)
 
 if __name__ == "__main__":
