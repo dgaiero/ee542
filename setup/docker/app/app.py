@@ -6,6 +6,8 @@ import socket
 import os
 from listenerBackend import listener
 from imageFaceDetection import frame_to_faceprint
+#not sure if this is what we need...
+from camera import VideoCamera
 
 UPLOAD_DIR = '/app/images'
 ALLOWED_EXTENSIONS = {'png','jpg','jpeg','gif'}
@@ -13,7 +15,6 @@ ALLOWED_EXTENSIONS = {'png','jpg','jpeg','gif'}
 app = Flask(__name__)
 app.config['UPLOAD_DIR'] = UPLOAD_DIR
 
-test = True
 
 #tests to see if the filename is valid or not
 def allowed_file(filename):
@@ -32,9 +33,24 @@ def index():
     <li><a href="/profiles">Profiles Page</a></li>
     <li><a href="/login">Login Page</a> (which will end up being the only page viewable)</li>
     </ul>
+    <h1>Video Stream</h1>
+    <img id="bg" src="{{ url_for('video_feed') }}">
 
   </div>
   """
+
+def gen(camera):
+    while True:
+        #get camera frame
+        frame = camera.get_frame()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+
+@app.route('/video_feed')
+def video_feed():
+    return Response(gen(VideoCamera()),
+                    mimetype='multipart/x-mixed-replace; boundary=frame'
+
 @app.route("/profiles")
 def allProfiles():
     return """
@@ -70,16 +86,15 @@ def login_preimage():
 #This is currently working NEED TO ASK JULIAN HOW TO GET FINGERPRINT FROM IMAGE - done
 @app.route("/login/<filename>")
 def login_postimage(filename):
-     
+    #first get fingerprint from image filename
+    #then get the entry in the mysql table
+    #then we need to call something to create the image timeline
+    #then we need to display the image timeline
     return send_from_directory(app.config['UPLOAD_DIR'],filename)
 
 if __name__ == "__main__":
     listen_thread = threading.Thread(target = listener)
     listen_thread.start() # start the listening backend. Could do a fork, but either one seems to work.
-    if(test):
-        #create a dummy process to test socket communication
-        process = subprocess.Popen(['python3','testSockets.py'])
-
 
     
     app.run(debug=False, host='0.0.0.0') # start the flask frontend
