@@ -15,6 +15,8 @@ construct = "*"
 colorlog = "*"
 commentjson = "*"
 pypubsub = "*"
+numpy = "*"
+flask = "*"
 
 [requires]
 python_version = "3.9"
