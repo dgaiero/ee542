@@ -1,9 +1,10 @@
-from flask import Flask,flash, request, redirect, url_for, send_from_directory,Response,render_template
+from flask import Flask,flash, request, redirect, url_for, send_from_directory,Response,render_template,g
 from werkzeug.utils import secure_filename
 import threading
 import subprocess
 import socket
 import os
+import cv2
 from imageFaceDetection import frame_to_faceprint
 #not sure if this is what we need...
 from camera import VideoCamera
@@ -23,7 +24,7 @@ def allowed_file(filename):
 
 @app.route("/")
 def index():
-  return render_template('index.html')
+    return render_template('index.html',version=cv2.__version__)
 
 def gen(camera):
     while True:
@@ -31,6 +32,7 @@ def gen(camera):
         frame = camera.get_frame()
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+
 
 @app.route('/video_feed')
 def video_feed():
@@ -72,11 +74,14 @@ def login_preimage():
 #This is currently working NEED TO ASK JULIAN HOW TO GET FINGERPRINT FROM IMAGE - done
 @app.route("/login/<filename>")
 def login_postimage(filename):
+
     #first get fingerprint from image filename
+    img = cv2.imread(app.config['UPLOAD_DIR'] +"/"+ filename)
+    face_print,face_image=frame_to_faceprint(img)
     #then get the entry in the mysql table
     #then we need to call something to create the image timeline
     #then we need to display the image timeline
-    return send_from_directory(app.config['UPLOAD_DIR'],filename)
+    return face_image
 
 if __name__ == "__main__":
     
