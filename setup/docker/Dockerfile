@@ -1,11 +1,11 @@
-FROM ubuntu:18.04
+FROM debian:buster
 
 MAINTAINER Sebastien Danthinne "sdanthinne@gmail.com"
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update -y && \
-    apt-get install -y python3-pip python3-dev python3-opencv
+    apt-get install -y python3-pip python3-dev
 
 COPY ./requirements.txt /requirements.txt
 
