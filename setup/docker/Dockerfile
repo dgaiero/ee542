@@ -1,40 +1,11 @@
-FROM python:3.9 as base
+FROM mohaseeb/raspberrypi3-python-opencv:3.4.2
 
-# Setup env
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONFAULTHANDLER 1
+ENV DEBIAN_FRONTEND=noninteractive
 
-FROM base AS python-deps
+RUN apt-get update -y && \
+     apt-get install -y --force-yes python3-pip python3-dev
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    build-essential \
-    cmake \
-    git \
-    wget \
-    unzip \
-    yasm \
-    pkg-config \
-    libswscale-dev \
-    libtbb2 \
-    libtbb-dev \
-    libjpeg-dev \
-    libpng-dev \
-    libtiff-dev \
-    libavformat-dev \
-    libpq-dev \
-    libssl-dev \
-    libavcodec-dev \
-    libv4l-dev \
-    python3-smbus \
-    python3-dev \
-    i2c-tools \
-    python3-matplotlib \
-    python3-numpy \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get -y autoremove
+ COPY ./requirements.txt /requirements.txt
 
 RUN pip install opencv-python
 COPY check_opencv_version.sh check_opencv_version.sh
@@ -88,15 +59,14 @@ ENTRYPOINT ["python", "app.py"]
 
 #RUN pip3 install --upgrade "pip < 21.0"
 
-# RUN pip3 install --upgrade pip setuptools wheel
+#RUN pip3 install --upgrade pip setuptools wheel
 
-# RUN pip3 install -r requirements.txt
+RUN pip install -r requirements.txt
+ RUN mkdir /app
 
-# RUN mkdir /app
+ COPY app /app/
 
-# COPY app /app/
+ ENTRYPOINT [ "python" ]
 
-# ENTRYPOINT [ "python3" ]
-
-# CMD [ "app/app.py" ]
+ CMD [ "app/app.py" ]
 
