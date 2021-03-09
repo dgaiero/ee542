@@ -36,8 +36,10 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get -y autoremove
 
-COPY download_build_install_opencv.sh download_build_install_opencv.sh
-RUN ./download_build_install_opencv.sh
+RUN pip install opencv-python
+COPY check_opencv_version.sh check_opencv_version.sh
+RUN ./check_opencv_version.sh
+
 
 # FROM base AS runtime
 
@@ -63,7 +65,7 @@ RUN chown -R frfts:frfts /app
 USER frfts
 WORKDIR /app
 
-ENTRYPOINT ["python", "-c", "\"import cv2; print(cv2.__version__)\""]
+ENTRYPOINT ["python", "app.py"]
 
 
 
