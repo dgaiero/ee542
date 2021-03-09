@@ -1,5 +1,6 @@
 from flask import Flask,flash, request, redirect, url_for, send_from_directory,Response,render_template,g
 from werkzeug.utils import secure_filename
+import mysql.connector
 import base64
 import threading
 import subprocess
@@ -15,7 +16,8 @@ ALLOWED_EXTENSIONS = {'png','jpg','jpeg','gif'}
 
 app = Flask(__name__)
 app.config['UPLOAD_DIR'] = UPLOAD_DIR
-
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['DEBUG'] = True
 
 #tests to see if the filename is valid or not
 def allowed_file(filename):
@@ -48,7 +50,7 @@ def allProfiles():
     """
 
 #working image upload
-@app.route("/login",methods=['GET','POST'])
+@app.route("/login/",methods=['GET','POST'])
 def login_preimage():
     if request.method == 'POST':
         if 'file' not in request.files:
@@ -67,24 +69,50 @@ def login_preimage():
     <h1> This is your login screen. You should be able to login here. </h1>
     <form method=post enctype=multipart/form-data>
         <input type=file name=file capture>
-        <input type=submit value=Upload>
+        <input type=submit value=Login>
     </form>
     """
 
 #this is where the user should be able to see their timeline if the image is already processed. 
 #This is currently working NEED TO ASK JULIAN HOW TO GET FINGERPRINT FROM IMAGE - done
-@app.route("/login/<filename>")
+@app.route("/login/<filename>",methods = ['GET'])
 def login_postimage(filename):
+    error=""
 
     #first get fingerprint from image filename
     img = cv2.imread(app.config['UPLOAD_DIR'] +"/"+ filename)
-    face_print,face_image=frame_to_faceprint(img)
-    ret, jpeg = cv2.imencode('.jpg',face_image)
-    jpg_as_text =base64.b64encode(jpeg)
+    faceprint_data = frame_to_faceprint(img)
+    jpg_face_login_text=""
+    if faceprint_data == 0:
+        jpg_face_login_text = ""
+        error+="no face detected/incorrect number of faces in image"
+    else:
+        face_print,face_image=faceprint_data
+
+        ret, jpeg_face_login = cv2.imencode('.jpg',face_image)
+    
+        jpg_face_login_text = base64.b64encode(jpeg_face_login)
+
+        try:
+            cnx = mysql.connector.connect(
+                user='ee542'
+                ,password='23doorkingdomsun56useland26chancegold60multiplybrownplace0'
+                ,host='192.168.15.2'
+                ,database='frfts')
+            query = ("SELECT * from ")
+
+        except mysql.connector.Error as err:
+            error += str(err)
+
+
+
+
+
+
     #then get the entry in the mysql table
     #then we need to call something to create the image timeline
     #then we need to display the image timeline
-    return render_template('login.html',photo=jpg_as_text)
+    return render_template(("login.html"),photo=jpg_face_login_text,error=error)
 
 if __name__ == "__main__":
     
