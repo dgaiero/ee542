@@ -1,5 +1,6 @@
 from flask import Flask,flash, request, redirect, url_for, send_from_directory,Response,render_template,g
 from werkzeug.utils import secure_filename
+import base64
 import threading
 import subprocess
 import socket
@@ -78,10 +79,12 @@ def login_postimage(filename):
     #first get fingerprint from image filename
     img = cv2.imread(app.config['UPLOAD_DIR'] +"/"+ filename)
     face_print,face_image=frame_to_faceprint(img)
+    ret, jpeg = cv2.imencode('.jpg',face_image)
+    jpg_as_text =base64.b64encode(jpeg)
     #then get the entry in the mysql table
     #then we need to call something to create the image timeline
     #then we need to display the image timeline
-    return face_image
+    return render_template('login.html',photo=jpg_as_text)
 
 if __name__ == "__main__":
     
