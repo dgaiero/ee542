@@ -21,6 +21,7 @@ class thermal_camera:
     
     def __init__(self, top_cutoff, bottom_cutoff, right_cutoff, left_cutoff, rpi_width, rpi_height):
 
+        self.first_loop = 1
         # Calibrate the thermal camera with the Rpi Camera
         self.top_cutoff = int(top_cutoff)
         self.bottom_cutoff = int(bottom_cutoff) 
@@ -35,10 +36,7 @@ class thermal_camera:
 
         # Determine Scaled Values
         self.scaled_width = self.rpi_width/self.frame_width
-        print('Scaled_width: ', self.scaled_width)
         self.scaled_height = self.rpi_height/self.frame_height
-        print('Scaled_height: ', self.scaled_height)
-
 
         # Set up the Thermal Camera
         i2c = busio.I2C(board.SCL, board.SDA, frequency=400000) # setup I2C
@@ -55,7 +53,7 @@ class thermal_camera:
             self.cursor.execute("DROP TABLE IF EXISTS Temps")
             self.cursor.execute("DROP TABLE IF EXISTS Users")
             self.cursor.execute("CREATE TABLE Users( face_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
-                    "face_print FLOAT, frame BLOB) ") 
+                    "face_print BLOB, frame BLOB) ") 
             self.cursor.execute("CREATE TABLE Temps( temp_num INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
                     "userId INT UNSIGNED , time DATETIME, temp INT UNSIGNED,"
                     "FOREIGN KEY (userId) REFERENCES Users (face_id) ON DELETE CASCADE )")
@@ -64,80 +62,107 @@ class thermal_camera:
             sys.exit(1)
         #   def send_data( self ):
 
-    def convertToBinaryData(self, filename):
-        with open(filename, 'rb') as file:
-            binaryData = file.read()
-        return binaryData
-
     def get_temp(self, person):
+       
         # Get the current temperature data
         therm_frame = np.zeros(self.mlx_shape[0]*self.mlx_shape[1]) # 768 temps
         self.mlx.getFrame(therm_frame) # read mlx90640
         data_array = np.fliplr(np.reshape(therm_frame, self.mlx_shape)) # reshape and flip
         data_array = ndimage.zoom(data_array, self.mlx_interp_val) # interpolate
-#        print('Data array: ', data_array)
-#        print('Length', len(data_array))
-#        print('F start x: ', person.forehead[0])
-#        print('F end x: ', person.forehead[1])
-#        print('F start y: ', person.forehead[2])
-#        print('F end y: ', person.forehead[3])
+        
         # Match forehead box coordinates thermal camera coordinates
         self.start_x = int(round(person.forehead[0]/self.scaled_width)) + self.left_cutoff
-#        print('Start_x', self.start_x)
         self.start_y = int(round(person.forehead[1]/self.scaled_height)) + self.top_cutoff
-#        print('Start_y', self.start_y)
         self.end_x = int(round(person.forehead[2]/self.scaled_width)) + self.left_cutoff
-#        print('End_x', self.end_x)
         self.end_y = int(round(person.forehead[3]/self.scaled_height)) + self.top_cutoff
-#        print('End_y', self.end_y)
         
         # Now get just the temps of interest into an array
         forehead_array = np.zeros([(self.end_y-self.start_y), (self.end_x - self.start_x)])
-#        print('Forehead array: ', forehead_array)
-#        print('Data array: ', data_array[self.start_y:self.end_y+1, self.start_x:self.end_x+1])
         forehead_array = data_array[self.start_y:self.end_y+1, self.start_x:self.end_x+1]
-#        print('Forehead array: ', forehead_array)
         temp = np.mean(forehead_array)
         print('Average forehead temp: {0:2.1f}C ({1:2.1f}F)'.\
                 format(temp, ((9.0/5.0)*temp+32.0)))
-        # Now format the date
-#        now = datetime.now()
-        ts = time.time()
-#        formatted_date = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-#        formatted_date = time.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Format the date
         formatted_date = datetime.now() 
-
-#        formatted_date = mariadb.Timestamp
-        #self.plot_update() 
-        print('Face Print norm: ', person.face_print)
+        
+#        face_print = np.linalg.norm(face_net.forward()[0])
         # Check norm against norms in table
-        self.cursor.execute(f"SELECT face_id FROM Users "
-        f"WHERE ({person.face_print} - face_print) < 0.15 "
-        f"AND ({person.face_print} - face_print) > -0.15;")
-        lst = self.cursor.fetchall()
-        if len(lst) == 0:
+
+        # Get the max id value
+        Q = ''' SELECT MAX(face_id) FROM Users'''
+        self.cursor.execute(Q)
+        max_id = self.cursor.fetchall()
+        maxxx = max_id[0][0]
+        print('Maxxx: ', maxxx)
+        norm  = 1
+        if( self.first_loop ):
+            norm = 1
+            self.first_loop = 0
+            max_id = 1
+        else:
+            x = 1
+            while x <= maxxx:
+                print('X: ',x)
+                # Extract and convert the face_print
+#                Q = ''' SELECT face_print FROM Users WHERE face_id = %s;'''
+#                val = (x,)
+#                self.cursor.execute(Q, val)
+                
+                self.cursor.execute(f"SELECT face_print FROM Users WHERE face_id = {x};")
+                
+                fp_string = self.cursor.fetchone()
+#                print('FP_string: ', fp_string)
+#                print('Length: ', len(fp_string))
+                fp_array = np.frombuffer(fp_string[0], np.uint8)
+#                print('FP_array: ', fp_array)
+                fp = cv2.imdecode(fp_array, cv2.IMREAD_GRAYSCALE)
+                
+                # Compare the two face_prints
+                norm = np.linalg.norm(person.face_print - fp)
+                same_face_id = x
+                print('Same Face Id: ', same_face_id)
+                print('Norm: ',norm)
+                if norm < 0.23:
+                    break
+                x = x+1
+
+        if norm > 0.23:
             print('No match')
-#            img_str = cv2.imencode('.png', person.frame) #[1].tostring()
-#            binaryPic = self.convertToBinaryData(img_str)
-#            self.cursor.execute(f"INSERT INTO Users (face_print, frame) "
-#                    f"VALUES ({person.face_print}, {binaryPic} )") 
-            self.cursor.execute(f"INSERT INTO Users (face_print) "
-                    f"VALUES ({person.face_print})") 
-            self.cursor.execute(f"SELECT face_id FROM Users "
-                    f"WHERE face_print = {person.face_print};")
-            new_id = self.cursor.fetchall()
-            Q1 = "INSERT INTO Temps (userId, time) VALUES (%s,%s,%s)"
-            val = (new_id[0][0], formatted_date, person.temperature)
-            self.cursor.execute(Q1,val)
-#            self.cursor.execute(f"INSERT INTO Temps (userId, time) "
-#                    f"VALUES ({new_id[0][0]}, {formatted_date})")
-#            self.cursor.execute(f"INSERT INTO Temps (userId, temp) "
-#                    f"VALUES ({new_id[0][0]}, {person.temperature})")
+            
+            # Convert the frame image to a string
+            img_str = cv2.imencode('.jpg', person.frame)[1].tostring()
+            fp_str = cv2.imencode('.jpg', person.face_print)[1].tostring()
+#            print('New face_print: ', fp_str)
+            
+            # Insert the frame into the table
+            Q1 = '''INSERT INTO Users (face_print, frame) VALUES (%s, %s)''' 
+            val1 = (fp_str, img_str,)
+            self.cursor.execute(Q1,val1)
+
+            # Convert the face_print to a string
+            # Insert the face_print into the table
+#            Q2 = '''INSERT INTO Users (face_print) VALUES (%s)''' 
+#            val2 = (fp_str,)
+#            self.cursor.execute(Q2,val2)
+            
+            # Get the face_id corresponding to the new face_print
+#            self.cursor.execute(f"SELECT face_id FROM Users "
+#                    f"WHERE face_print = {person.face_print};")
+#            new_id = self.cursor.fetchall()
+
+            # Insert the time and temp with the new face_id
+            Q3 = "INSERT INTO Temps (userId, time, temp) VALUES (%s,%s,%s)"
+            val3 = (maxxx, formatted_date, person.temperature)
+            self.cursor.execute(Q3,val3)
+        
         else:
             print('Found a match')
-            Q2 = "INSERT INTO Temps (userId, time) VALUES (%s,%s,%s)"
-            val2 = (lst[0][0], formatted_date, person.temperature)
-            self.cursor.execute(Q2,val2)
+
+            # Insert the time and temp with the matching face_id
+            Q4 = "INSERT INTO Temps (userId, time, temp) VALUES (%s,%s,%s)"
+            val4 = (same_face_id, formatted_date, person.temperature)
+            self.cursor.execute(Q4,val4)
         
         self.connection.commit()
 
@@ -208,7 +233,8 @@ def frame_to_person(frame_array):
         face_crop = frame_array[face[1]:face[1] + face[3], face[0]:face[0] + face[2], :]
         face_blob = cv2.dnn.blobFromImage(face_crop,1,(224,224))
         face_net.setInput(face_blob)
-        face_print = np.linalg.norm(face_net.forward()[0])
+#        face_print = np.linalg.norm(face_net.forward()[0])
+        face_print = face_net.forward()
         person = user(face_print, forehead, 0, frame_array, t)
         return person
 
@@ -229,20 +255,6 @@ if __name__ == "__main__":
             left_cutoff, rpi_width, rpi_height )
     
     camera = PiCamera()
-    """
-    camera.resolution = (640,480)
-    camera.framerate = 32
-    rawCapture = PiRGBArray(camera, size =(640,480))
-    for frame in camera.capture_continuous(rawCapture, 
-            format="bgr", use_video_port=True):
-        image = frame.array
-        image = cv2.rectangle(image, (start_x,start_y), (end_x, end_y), (0,0,255), 2)
-        cv2.imshow("Preview", image)
-        key = cv2.waitKey(1) & 0xFF
-        rawCapture.truncate(0)
-        if key == ord("q"):
-            break
-"""
     while(1):
         rawCapture = PiRGBArray(camera)
         time.sleep(0.1)
