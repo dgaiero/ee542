@@ -65,13 +65,7 @@ def login_preimage():
             fFile.save(os.path.join(app.config['UPLOAD_DIR'],filename))
             return redirect(url_for('login_postimage',filename=filename))
 
-    return """
-    <h1> This is your login screen. You should be able to login here. </h1>
-    <form method=post enctype=multipart/form-data>
-        <input type=file name=file capture>
-        <input type=submit value=Login>
-    </form>
-    """
+    return render_template("prelogin.html")
 
 #this is where the user should be able to see their timeline if the image is already processed. 
 #This is currently working NEED TO ASK JULIAN HOW TO GET FINGERPRINT FROM IMAGE - done
@@ -89,9 +83,11 @@ def login_postimage(filename):
     else:
         face_print,face_image=faceprint_data
 
+
         ret, jpeg_face_login = cv2.imencode('.jpg',face_image)
     
         jpg_face_login_text = base64.b64encode(jpeg_face_login)
+
 
         try:
             cnx = mysql.connector.connect(

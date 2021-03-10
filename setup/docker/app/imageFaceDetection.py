@@ -12,7 +12,7 @@ def frame_to_faceprint(frame): # frame is a mat
     face_crop = frame_array[face[1]:face[1] + face[3], face[0]:face[0] + face[2], :] # crop frame to just include face
     face_blob = cv2.dnn.blobFromImage(face_crop, 1, (224, 224))
     face_net.setInput(face_blob) # set the dnn's input to the face blob
-    face_print = face_net.forward # retrieve output of dnn (faceprint)
+    face_print = face_net.forward() # retrieve output of dnn (faceprint)
     
     return face_print,face_crop
     
