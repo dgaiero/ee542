@@ -1,0 +1,304 @@
+################################################################################
+# MLX90640 Test with Raspberry Pi
+################################################################################
+
+import time, board, busio
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import adafruit_mlx90640
+from scipy import ndimage
+from picamera import PiCamera
+from picamera.array import PiRGBArray
+import cv2
+import mariadb
+from datetime import datetime
+class thermal_camera:
+    therm_width = 32
+    therm_height = 24
+    mlx_interp_val = 10
+
+    
+    def __init__(self, top_cutoff, bottom_cutoff, right_cutoff, left_cutoff, rpi_width, rpi_height):
+
+        # Calibrate the thermal camera with the Rpi Camera
+        self.top_cutoff = int(top_cutoff)
+        self.bottom_cutoff = int(bottom_cutoff) 
+        self.right_cutoff = int(right_cutoff)
+        self.left_cutoff = int(left_cutoff)
+        self.rpi_width = rpi_width 
+        self.rpi_height = rpi_height
+
+        # calc the width and height of thermal camera frame
+        self.frame_width = self.right_cutoff - self.left_cutoff
+        self.frame_height = self.bottom_cutoff - self.top_cutoff
+
+        # Determine Scaled Values
+        self.scaled_width = self.rpi_width/self.frame_width
+        print('Scaled_width: ', self.scaled_width)
+        self.scaled_height = self.rpi_height/self.frame_height
+        print('Scaled_height: ', self.scaled_height)
+
+
+        # Set up the Thermal Camera
+        i2c = busio.I2C(board.SCL, board.SDA, frequency=400000) # setup I2C
+        self.mlx = adafruit_mlx90640.MLX90640(i2c) # begin MLX90640 with I2C comm
+        self.mlx.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_16_HZ # set refresh rate
+        self.mlx_shape = (self.therm_height,self.therm_width) # Set the shape
+        self.mlx_interp_shape = (self.mlx_shape[0]*self.mlx_interp_val, # Interp shape
+                self.mlx_shape[1]*self.mlx_interp_val)
+        try:
+            self.connection = mariadb.connect(user="ee542",\
+                    password="23doorkingdomsun56useland26chancegold60multiplybrownplace0",\
+                    database="frfts", host="172.16.15.84")
+            self.cursor = self.connection.cursor()
+            self.cursor.execute("DROP TABLE IF EXISTS Temps")
+            self.cursor.execute("DROP TABLE IF EXISTS Users")
+            self.cursor.execute("CREATE TABLE Users( face_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
+                    "face_print FLOAT, frame BLOB) ") 
+            self.cursor.execute("CREATE TABLE Temps( temp_num INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
+                    "userId INT UNSIGNED , time DATETIME, temp INT UNSIGNED,"
+                    "FOREIGN KEY (userId) REFERENCES Users (face_id) ON DELETE CASCADE )")
+        except mariadb.Error as e:
+            print(f"Error connecting to MariaDB Platform: {e}")
+            sys.exit(1)
+        #   def send_data( self ):
+
+    def convertToBinaryData(self, filename):
+        with open(filename, 'rb') as file:
+            binaryData = file.read()
+        return binaryData
+
+    def get_temp(self, person):
+        # Get the current temperature data
+        therm_frame = np.zeros(self.mlx_shape[0]*self.mlx_shape[1]) # 768 temps
+        self.mlx.getFrame(therm_frame) # read mlx90640
+        data_array = np.fliplr(np.reshape(therm_frame, self.mlx_shape)) # reshape and flip
+        data_array = ndimage.zoom(data_array, self.mlx_interp_val) # interpolate
+#        print('Data array: ', data_array)
+#        print('Length', len(data_array))
+#        print('F start x: ', person.forehead[0])
+#        print('F end x: ', person.forehead[1])
+#        print('F start y: ', person.forehead[2])
+#        print('F end y: ', person.forehead[3])
+        # Match forehead box coordinates thermal camera coordinates
+        self.start_x = int(round(person.forehead[0]/self.scaled_width)) + self.left_cutoff
+#        print('Start_x', self.start_x)
+        self.start_y = int(round(person.forehead[1]/self.scaled_height)) + self.top_cutoff
+#        print('Start_y', self.start_y)
+        self.end_x = int(round(person.forehead[2]/self.scaled_width)) + self.left_cutoff
+#        print('End_x', self.end_x)
+        self.end_y = int(round(person.forehead[3]/self.scaled_height)) + self.top_cutoff
+#        print('End_y', self.end_y)
+        
+        # Now get just the temps of interest into an array
+        forehead_array = np.zeros([(self.end_y-self.start_y), (self.end_x - self.start_x)])
+#        print('Forehead array: ', forehead_array)
+#        print('Data array: ', data_array[self.start_y:self.end_y+1, self.start_x:self.end_x+1])
+        forehead_array = data_array[self.start_y:self.end_y+1, self.start_x:self.end_x+1]
+#        print('Forehead array: ', forehead_array)
+        temp = np.mean(forehead_array)
+        print('Average forehead temp: {0:2.1f}C ({1:2.1f}F)'.\
+                format(temp, ((9.0/5.0)*temp+32.0)))
+        # Now format the date
+#        now = datetime.now()
+        ts = time.time()
+#        formatted_date = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+#        formatted_date = time.strftime('%Y-%m-%d %H:%M:%S')
+        formatted_date = datetime.now() 
+
+#        formatted_date = mariadb.Timestamp
+        #self.plot_update() 
+        print('Face Print norm: ', person.face_print)
+        # Check norm against norms in table
+        self.cursor.execute(f"SELECT face_id FROM Users "
+        f"WHERE ({person.face_print} - face_print) < 0.15 "
+        f"AND ({person.face_print} - face_print) > -0.15;")
+        lst = self.cursor.fetchall()
+        if len(lst) == 0:
+            print('No match')
+#            img_str = cv2.imencode('.png', person.frame) #[1].tostring()
+#            binaryPic = self.convertToBinaryData(img_str)
+#            self.cursor.execute(f"INSERT INTO Users (face_print, frame) "
+#                    f"VALUES ({person.face_print}, {binaryPic} )") 
+            self.cursor.execute(f"INSERT INTO Users (face_print) "
+                    f"VALUES ({person.face_print})") 
+            self.cursor.execute(f"SELECT face_id FROM Users "
+                    f"WHERE face_print = {person.face_print};")
+            new_id = self.cursor.fetchall()
+            Q1 = "INSERT INTO Temps (userId, time) VALUES (%s,%s,%s)"
+            val = (new_id[0][0], formatted_date, person.temperature)
+            self.cursor.execute(Q1,val)
+#            self.cursor.execute(f"INSERT INTO Temps (userId, time) "
+#                    f"VALUES ({new_id[0][0]}, {formatted_date})")
+#            self.cursor.execute(f"INSERT INTO Temps (userId, temp) "
+#                    f"VALUES ({new_id[0][0]}, {person.temperature})")
+        else:
+            print('Found a match')
+            Q2 = "INSERT INTO Temps (userId, time) VALUES (%s,%s,%s)"
+            val2 = (lst[0][0], formatted_date, person.temperature)
+            self.cursor.execute(Q2,val2)
+        
+        self.connection.commit()
+
+    def close_connect(self):
+        self.connection.close()
+    
+    def set_figure(self):
+        # setup the figure for plotting
+        plt.ion() # enables interactive plotting
+        self.fig = plt.figure(figsize=(12,9))
+        self.ax = self.fig.add_subplot(111) # add subplot
+        self.fig.subplots_adjust(0.05,0.05,0.95,0.95) # get rid of padding
+        self.therm1 = self.ax.imshow(np.zeros(self.mlx_interp_shape), interpolation = 'none',
+                cmap = plt.cm.bwr, vmin = 25, vmax = 45) # start plot with zeros
+        self.cbar = self.fig.colorbar(self.therm1) # setup colorbar for temps
+        self.cbar.set_label('Temperature [$^{\circ}$C]', fontsize=14)
+
+        self.fig.canvas.draw()
+        self.ax_background = self.fig.canvas.copy_from_bbox(self.ax.bbox) # copy background
+        self.fig.show()
+
+        self.frame = np.zeros(self.mlx_shape[0]*self.mlx_shape[1]) # 768 temps
+
+    def plot_update(self):
+        self.fig.canvas.restore_region(self.ax_background) # restore background
+        self.mlx.getFrame(self.frame) # read mlx90640
+        data_array = np.fliplr(np.reshape(self.frame, self.mlx_shape)) # reshape and flip
+        data_array = ndimage.zoom(data_array, self.mlx_interp_val) # interpolate
+        self.therm1.set_array(data_array) # set data
+        self.therm1.set_clim(vmin=np.min(data_array), vmax=np.max(data_array))
+        self.cbar.on_mappable_changed(self.therm1) # update colorbar range
+
+        self.ax.draw_artist(self.therm1) # draw new thermal image
+        self.fig.canvas.blit(self.ax.bbox) # draw background
+        rect = patches.Rectangle((self.start_x,self.start_y), (self.end_x - self.start_x),
+                (self.end_y - self.start_y), linewidth=1, edgecolor='r', facecolor='none')
+        self.ax.add_patch(rect)
+        self.fig.canvas.flush_events() # show the new image
+        return
+
+class user:
+    def __init__(self, face_print, forehead, temperature, frame, time ):
+        self.face_print = face_print
+        self.forehead = forehead
+        self.temperature = temperature
+        self.frame = frame
+        self.time = time
+
+def frame_to_person(frame_array):
+    haar_face_cascade = cv2.CascadeClassifier('/usr/local/share/OpenCV/haarcascades/haarcascade_frontalface_default.xml')
+    gray = cv2.cvtColor(frame_array,cv2.COLOR_BGR2GRAY)
+    faces = haar_face_cascade.detectMultiScale(gray,1.1,3)
+    if len(faces) != 1:
+        print("Faces in fame != 1")
+        return 0
+    face = faces[0]
+    for (x,y,w,h) in faces:
+        cv2.rectangle(frame_array, (x,y), (x+w,y+h), (0,0,255), 3)
+        start_x = x + w//4
+        start_y = y + h//8
+        end_x = x+3*w//4
+        end_y = y+h//4
+        forehead = [start_x, start_y, end_x, end_y]
+        cv2.rectangle(frame_array, (start_x,start_y), (end_x,end_y), (0,0,255), 2)
+        t = time.ctime(time.time())
+        cv2.putText(frame_array, t, (10,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+        face_net = cv2.dnn.readNetFromCaffe('bvlc_googlenet.prototxt','bvlc_googlenet.caffemodel')
+        face_crop = frame_array[face[1]:face[1] + face[3], face[0]:face[0] + face[2], :]
+        face_blob = cv2.dnn.blobFromImage(face_crop,1,(224,224))
+        face_net.setInput(face_blob)
+        face_print = np.linalg.norm(face_net.forward()[0])
+        person = user(face_print, forehead, 0, frame_array, t)
+        return person
+
+if __name__ == "__main__":
+    print('Starting RPi camera')
+    start_x = 300 
+    start_y = 400
+    end_x = 340
+    end_y = 425 
+    top_cutoff = 0
+    bottom_cutoff = 220
+    right_cutoff = 275
+    left_cutoff = 45
+    rpi_width = 1280 
+    rpi_height = 720 
+    forehead = [start_x, start_y, end_x, end_y];
+    therm_cam = thermal_camera( top_cutoff, bottom_cutoff, right_cutoff,
+            left_cutoff, rpi_width, rpi_height )
+    
+    camera = PiCamera()
+    """
+    camera.resolution = (640,480)
+    camera.framerate = 32
+    rawCapture = PiRGBArray(camera, size =(640,480))
+    for frame in camera.capture_continuous(rawCapture, 
+            format="bgr", use_video_port=True):
+        image = frame.array
+        image = cv2.rectangle(image, (start_x,start_y), (end_x, end_y), (0,0,255), 2)
+        cv2.imshow("Preview", image)
+        key = cv2.waitKey(1) & 0xFF
+        rawCapture.truncate(0)
+        if key == ord("q"):
+            break
+"""
+    while(1):
+        rawCapture = PiRGBArray(camera)
+        time.sleep(0.1)
+        camera.capture(rawCapture, format='bgr')
+        image = rawCapture.array
+
+        person = frame_to_person(image)
+    
+        if person == 0:
+            print("Error")
+        else:
+            therm_cam.get_temp(person)
+            cv2.putText(person.frame, str(person.temperature), (10,100),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+            cv2.imshow("Image", person.frame)
+            cv2.waitKey(10)
+    
+
+    """ RPI camera setup and display 
+#    camera = PiCamera()
+    camera.resolution = (640,480)
+#    camera.framerate = 32
+#    rawCapture = PiRGBArray(camera, size =(640,480))
+#    time.sleep(0.1)
+    
+    # Get a single still from the Rpi
+#    camera.capture(rawCapture, format='bgr')
+#    image = rawCapture.array
+#    image = cv2.rectangle(image, (start_x,start_y), (end_x, end_y), (0,0,255), 2)
+
+#    cv2.imshow("Image", image)
+#    time.sleep(2)"""
+
+    """ 
+    # Stream the RPi camera video 
+    for frame in camera.capture_continuous(rawCapture, 
+            format="bgr", use_video_port=True):
+        image = frame.array
+        image = cv2.rectangle(image, (start_x,start_y), (end_x, end_y), (0,0,255), 2)
+        cv2.imshow("Preview", image)
+        key = cv2.waitKey(1) & 0xFF
+        rawCapture.truncate(0)
+        try:
+            therm_cam.plot_update() # update plot
+        except:
+            print('Plot update error') 
+            break
+        if key == ord("q"):
+            break
+    """
+
+
+
+
+
+
+
+
+
