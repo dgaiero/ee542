@@ -2,17 +2,23 @@
 # MLX90640 Test with Raspberry Pi
 ################################################################################
 
-import time, board, busio
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+import os
+import time
+from datetime import datetime
+from pathlib import Path
+
 import adafruit_mlx90640
-from scipy import ndimage
-from picamera import PiCamera
-from picamera.array import PiRGBArray
+import board
+import busio
 import cv2
 import mariadb
-from datetime import datetime
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+import numpy as np
+from dotenv import load_dotenv
+from scipy import ndimage
+
+env_path = Path('.') / 'sql.env'
 class thermal_camera:
     therm_width = 32
     therm_height = 24
@@ -21,6 +27,7 @@ class thermal_camera:
     
     def __init__(self, top_cutoff, bottom_cutoff, right_cutoff, left_cutoff, rpi_width, rpi_height):
 
+        load_dotenv(dotenv_path=env_path)
         self.first_loop = 1
         # Calibrate the thermal camera with the Rpi Camera
         self.top_cutoff = int(top_cutoff)
@@ -46,15 +53,13 @@ class thermal_camera:
         self.mlx_interp_shape = (self.mlx_shape[0]*self.mlx_interp_val, # Interp shape
                 self.mlx_shape[1]*self.mlx_interp_val)
         try:
-            self.connection = mariadb.connect(user="ee542",\
-                    password="23doorkingdomsun56useland26chancegold60multiplybrownplace0",\
-                    database="frfts", host="172.16.15.84")
+            self.connection = mariadb.connect(user=os.getenv("SQL_USER"),\
+                    password=os.getenv("SQL_PASSWORD"),\
+                    database=os.getenv("SQL_DATABASE"), host=os.getenv("SQL_HOST"))
             self.cursor = self.connection.cursor()
-            self.cursor.execute("DROP TABLE IF EXISTS Temps")
-            self.cursor.execute("DROP TABLE IF EXISTS Users")
-            self.cursor.execute("CREATE TABLE Users( face_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
+            self.cursor.execute("CREATE TABLE IF NOT EXISTS Users( face_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
                     "face_print BLOB, frame BLOB) ") 
-            self.cursor.execute("CREATE TABLE Temps( temp_num INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
+            self.cursor.execute("CREATE TABLE IF NOT EXISTS Temps( temp_num INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
                     "userId INT UNSIGNED , time DATETIME, temp INT UNSIGNED,"
                     "FOREIGN KEY (userId) REFERENCES Users (face_id) ON DELETE CASCADE )")
         except mariadb.Error as e:
@@ -239,6 +244,8 @@ def frame_to_person(frame_array):
         return person
 
 if __name__ == "__main__":
+    from picamera import PiCamera
+    from picamera.array import PiRGBArray
     print('Starting RPi camera')
     start_x = 300 
     start_y = 400
