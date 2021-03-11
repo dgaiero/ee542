@@ -2,19 +2,20 @@
 from matplotlib import pyplot as plt
 from multiprocessing import Process
 import os
+import io
 
 outbox = "/app/visuals"
 #returns an in-memory photo to be displayed from an array of tuples.
-def createHistogram(times):
+def createHistogram(times,temps):
     #data 
     buf = io.BytesIO()
     plt.figure(figsize=[10,8])
     plt.title("user temperature")
     plt.xlabel('Date',fontsize=15)
-    ply.ylabel('Temperature',fontsize=15)
-    plt.plot(times[0],times[1])
+    plt.ylabel('Temperature',fontsize=15)
+    plt.plot(times,temps)
     #save the created plot
-    plt.savefig(buf,bbox_inches='tight',format='jpg')
+    plt.savefig(buf,bbox_inches='tight',format='png')
     buf.seek(0)
     return buf
 

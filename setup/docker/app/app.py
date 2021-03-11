@@ -11,6 +11,7 @@ import cv2
 from imageFaceDetection import frame_to_faceprint
 #not sure if this is what we need...
 from camera import VideoCamera
+from imageCreator import createHistogram
 
 UPLOAD_DIR = '/app/images'
 ALLOWED_EXTENSIONS = {'png','jpg','jpeg','gif'}
@@ -122,6 +123,18 @@ def login_postimage(filename):
 
                     face=frame
 
+                query = '''SELECT time,temp FROM Temps WHERE userId=%s'''
+                cursor.execute(query,(str(face_id),))
+                times = []
+                temps = []
+                for data in cursor.fetchall():
+                    times.append(data[0])
+                    temps.append(data[1])
+                gram = createHistogram(times,temps)
+                file_bytes = np.asarray(bytearray(gram.read()),dtype=np.uint8)
+                img1 = cv2.imdecode(file_bytes,cv2.IMREAD_COLOR)
+                ret, img = cv2.imencode('.jpg',img1)
+                graphic = base64.b64encode(img)
         except mysql.connector.Error as err:
             error += str(err)
 
