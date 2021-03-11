@@ -4,7 +4,8 @@ import numpy as np
 def frame_to_faceprint(frame): # frame is a mat
     haar_face_cascade = cv2.CascadeClassifier('/app/haarcascade_frontalface_default.xml') # initialize haar cascade
     frame_array = np.copy(frame) # make a numpy array copy of the input frame
-    faces = haar_face_cascade.detectMultiScale(frame_array[:,:,1], scaleFactor = 1.1, minSize = (4,4), minNeighbors = 6) # create an array of the faces in the frame
+    gray = cv2.cvtColor(frame_array,cv2.COLOR_BGR2GRAY)
+    faces = haar_face_cascade.detectMultiScale(gray, scaleFactor = 1.1, minSize = (4,4), minNeighbors = 6) # create an array of the faces in the frame
     if len(faces) != 1:
        return 0 # exit if more than one face in frame or if no face in frame
     face = faces[0]

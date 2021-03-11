@@ -107,7 +107,7 @@ def login_postimage(filename):
                 fp_array = np.frombuffer(face_print_remote,np.uint8)
                 fp = cv2.imdecode(fp_array,cv2.IMREAD_GRAYSCALE)
                 norm = np.linalg.norm(face_print-fp)
-                error+="norm= "+str(norm)
+                #error+="norm= "+str(norm)
                 if norm<0.23 or True:
                     face_id = face_id_remote
                     break
@@ -119,6 +119,7 @@ def login_postimage(filename):
                 query = '''SELECT frame FROM Users WHERE face_id=%s'''
                 cursor.execute(query,(str(face_id),))
                 for frame in cursor.fetchall():
+
                     face=frame
 
         except mysql.connector.Error as err:
