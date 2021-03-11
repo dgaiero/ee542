@@ -16,8 +16,6 @@ import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 from dotenv import load_dotenv
-from picamera import PiCamera
-from picamera.array import PiRGBArray
 from scipy import ndimage
 
 env_path = Path('.') / 'sql.env'
@@ -246,6 +244,8 @@ def frame_to_person(frame_array):
         return person
 
 if __name__ == "__main__":
+    from picamera import PiCamera
+    from picamera.array import PiRGBArray
     print('Starting RPi camera')
     start_x = 300 
     start_y = 400
