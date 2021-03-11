@@ -4,15 +4,18 @@ from multiprocessing import Process
 import os
 
 outbox = "/app/visuals"
-
-def createHistogram(data, masterObject):
+#returns an in-memory photo to be displayed from an array of tuples.
+def createHistogram(times):
     #data 
+    buf = io.BytesIO()
     plt.figure(figsize=[10,8])
     plt.title("user temperature")
     plt.xlabel('Date',fontsize=15)
     ply.ylabel('Temperature',fontsize=15)
-    plt.plot(data[0],data[1])
+    plt.plot(times[0],times[1])
     #save the created plot
-    plt.savefig(outbox+"/"+masterObject.id,bbox_inches='tight')
+    plt.savefig(buf,bbox_inches='tight',format='jpg')
+    buf.seek(0)
+    return buf
 
 

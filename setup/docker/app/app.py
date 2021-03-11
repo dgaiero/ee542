@@ -1,5 +1,6 @@
 from flask import Flask,flash, request, redirect, url_for, send_from_directory,Response,render_template,g
 from werkzeug.utils import secure_filename
+import numpy as np
 import mysql.connector
 import base64
 import threading
@@ -77,6 +78,8 @@ def login_postimage(filename):
     img = cv2.imread(app.config['UPLOAD_DIR'] +"/"+ filename)
     faceprint_data = frame_to_faceprint(img)
     jpg_face_login_text=""
+    face = ""
+    graphic = ""
     if faceprint_data == 0:
         jpg_face_login_text = ""
         error+="no face detected/incorrect number of faces in image"
@@ -95,7 +98,28 @@ def login_postimage(filename):
                 ,password='23doorkingdomsun56useland26chancegold60multiplybrownplace0'
                 ,host='192.168.15.2'
                 ,database='frfts')
-            query = ("SELECT * from ")
+            cursor = cnx.cursor()
+
+            query = ("SELECT face_print,face_id from Users;") # get all of the users
+            face_id = -1
+            cursor.execute(query)
+            for (face_print_remote,face_id_remote) in cursor.fetchall():
+                fp_array = np.frombuffer(face_print_remote,np.uint8)
+                fp = cv2.imdecode(fp_array,cv2.IMREAD_GRAYSCALE)
+                norm = np.linalg.norm(face_print-fp)
+                error+="norm= "+str(norm)
+                if norm<0.23 or True:
+                    face_id = face_id_remote
+                    break
+
+
+            if face_id!=-1:
+                #then we are logged in...
+                #error += "logged in"
+                query = '''SELECT frame FROM Users WHERE face_id=%s'''
+                cursor.execute(query,(str(face_id),))
+                for frame in cursor.fetchall():
+                    face=frame
 
         except mysql.connector.Error as err:
             error += str(err)
@@ -108,7 +132,7 @@ def login_postimage(filename):
     #then get the entry in the mysql table
     #then we need to call something to create the image timeline
     #then we need to display the image timeline
-    return render_template(("login.html"),photo=jpg_face_login_text,error=error)
+    return render_template(("login.html"),photo=jpg_face_login_text,error=error,face=face,graphic=graphic)
 
 if __name__ == "__main__":
     
