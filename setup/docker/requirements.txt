@@ -1,5 +1,13 @@
+Adafruit-Blinka==6.4.0
+adafruit-circuitpython-busdevice==5.0.6
+adafruit-circuitpython-mlx90640==1.2.3
+adafruit-circuitpython-register==1.9.5
+Adafruit-PlatformDetect==3.3.0
+Adafruit-PureIO==1.1.8
 Flask==1.0.2
 mysql-connector-python==8.0.23
 matplotlib==2.2.5
 dotenv==0.0.5
 mariadb==1.0.6
+RPi.GPIO==0.7.0
+scipy==1.6.1
