@@ -120,8 +120,11 @@ def login_postimage(filename):
                 query = '''SELECT frame FROM Users WHERE face_id=%s'''
                 cursor.execute(query,(str(face_id),))
                 for frame in cursor.fetchall():
+                    frame_array = np.frombuffer(frame[0],np.uint8)
+                    frame_trans = cv2.imdecode(frame_array,cv2.IMREAD_COLOR)
+                    ret, temp1 = cv2.imencode('.jpg',frame_trans)
+                    face = base64.b64encode(temp1)
 
-                    face=frame
 
                 query = '''SELECT time,temp FROM Temps WHERE userId=%s'''
                 cursor.execute(query,(str(face_id),))
