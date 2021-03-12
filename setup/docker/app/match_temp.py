@@ -18,7 +18,6 @@ import numpy as np
 from dotenv import load_dotenv
 from scipy import ndimage
 
-env_path = Path('.') / 'sql.env'
 class thermal_camera:
     therm_width = 32
     therm_height = 24
@@ -27,7 +26,7 @@ class thermal_camera:
     
     def __init__(self, top_cutoff, bottom_cutoff, right_cutoff, left_cutoff, rpi_width, rpi_height):
 
-        load_dotenv(dotenv_path=env_path)
+        load_dotenv()
         self.first_loop = 1
         # Calibrate the thermal camera with the Rpi Camera
         self.top_cutoff = int(top_cutoff)

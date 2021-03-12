@@ -7,14 +7,17 @@ import threading
 import subprocess
 import socket
 import os
+import dotenv
 import cv2
 from imageFaceDetection import frame_to_faceprint
 #not sure if this is what we need...
 from camera import VideoCamera
 from imageCreator import createHistogram
 
-UPLOAD_DIR = '/app/images'
+CWD = os.getcwd()
+UPLOAD_DIR = os.path.join(CWD, 'images')
 ALLOWED_EXTENSIONS = {'png','jpg','jpeg','gif'}
+
 
 app = Flask(__name__)
 app.config['UPLOAD_DIR'] = UPLOAD_DIR
@@ -67,7 +70,7 @@ def login_preimage():
             fFile.save(os.path.join(app.config['UPLOAD_DIR'],filename))
             return redirect(url_for('login_postimage',filename=filename))
 
-    return render_template("prelogin.html")
+    return render_template('prelogin.html')
 
 #this is where the user should be able to see their timeline if the image is already processed. 
 #This is currently working NEED TO ASK JULIAN HOW TO GET FINGERPRINT FROM IMAGE - done
@@ -75,6 +78,8 @@ def login_preimage():
 def login_postimage(filename):
     error=""
 
+    # load dotenv
+    load_dotenv()
     #first get fingerprint from image filename
     img = cv2.imread(app.config['UPLOAD_DIR'] +"/"+ filename)
     faceprint_data = frame_to_faceprint(img)
@@ -95,10 +100,10 @@ def login_postimage(filename):
 
         try:
             cnx = mysql.connector.connect(
-                user='ee542'
-                ,password='23doorkingdomsun56useland26chancegold60multiplybrownplace0'
-                ,host='192.168.15.2'
-                ,database='frfts')
+                user=os.getenv("SQL_USER")
+                ,password=os.getenv("SQL_PASSWORD")
+                ,host=os.getenv("SQL_HOST")
+                ,database=os.getenv("SQL_DATABASE"))
             cursor = cnx.cursor()
 
             query = ("SELECT face_print,face_id from Users;") # get all of the users

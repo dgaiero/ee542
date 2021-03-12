@@ -25,6 +25,8 @@ services:
         PUID: 500
         PGID: 500
         I2C_GID: 44
+    env_file:
+      - $DOCKERDIR/setup/docker/app/.env
     devices:
       # the spi bus
       - "/dev/i2c-1:/dev/i2c-1"
