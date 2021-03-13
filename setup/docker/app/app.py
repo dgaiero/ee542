@@ -14,8 +14,9 @@ from imageFaceDetection import frame_to_faceprint
 from camera import VideoCamera
 from imageCreator import createHistogram
 
-CWD = os.getcwd()
-UPLOAD_DIR = os.path.join(CWD, 'images')
+CWD = os.path.abspath(os.getcwd())
+FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_DIR = os.path.join(FILE_DIR, 'images')
 ALLOWED_EXTENSIONS = {'png','jpg','jpeg','gif'}
 
 
