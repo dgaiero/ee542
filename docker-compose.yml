@@ -30,9 +30,8 @@ services:
     devices:
       # the spi bus
       - "/dev/i2c-1:/dev/i2c-1"
-      # - "/dev/video0:/dev/video0"
-    # ports:
-    #   - "80:5000"
+    ports:
+      - "80:80"
     restart: unless-stopped
     depends_on:
       - mariadb
@@ -41,6 +40,7 @@ services:
 
   # MariaDB - MySQL Database
   mariadb:
+    hostname: mariadb
     container_name: mariadb
     image: linuxserver/mariadb:latest
     restart: always
