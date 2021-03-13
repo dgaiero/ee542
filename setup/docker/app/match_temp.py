@@ -220,7 +220,7 @@ def frame_to_person(frame_array):
     gray = cv2.cvtColor(frame_array,cv2.COLOR_BGR2GRAY)
     faces = haar_face_cascade.detectMultiScale(gray,1.1,3)
     if len(faces) != 1:
-        print("Faces in fame != 1")
+        print("Faces in frame != 1")
         return 0
     face = faces[0]
     for (x,y,w,h) in faces:
@@ -243,80 +243,37 @@ def frame_to_person(frame_array):
         return person
 
 if __name__ == "__main__":
-    from picamera import PiCamera
-    from picamera.array import PiRGBArray
-    print('Starting RPi camera')
-    start_x = 300 
-    start_y = 400
-    end_x = 340
-    end_y = 425 
-    top_cutoff = 0
-    bottom_cutoff = 220
-    right_cutoff = 275
-    left_cutoff = 45
-    rpi_width = 1280 
-    rpi_height = 720 
-    forehead = [start_x, start_y, end_x, end_y];
-    therm_cam = thermal_camera( top_cutoff, bottom_cutoff, right_cutoff,
-            left_cutoff, rpi_width, rpi_height )
-    
-    camera = PiCamera()
-    while(1):
-        rawCapture = PiRGBArray(camera)
-        time.sleep(0.1)
-        camera.capture(rawCapture, format='bgr')
-        image = rawCapture.array
-
-        person = frame_to_person(image)
-    
-        if person == 0:
-            print("Error")
-        else:
-            therm_cam.get_temp(person)
-            cv2.putText(person.frame, str(person.temperature), (10,100),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
-            cv2.imshow("Image", person.frame)
-            cv2.waitKey(10)
-    
-
-    """ RPI camera setup and display 
-#    camera = PiCamera()
-    camera.resolution = (640,480)
-#    camera.framerate = 32
-#    rawCapture = PiRGBArray(camera, size =(640,480))
-#    time.sleep(0.1)
-    
-    # Get a single still from the Rpi
-#    camera.capture(rawCapture, format='bgr')
-#    image = rawCapture.array
-#    image = cv2.rectangle(image, (start_x,start_y), (end_x, end_y), (0,0,255), 2)
-
-#    cv2.imshow("Image", image)
-#    time.sleep(2)"""
-
-    """ 
-    # Stream the RPi camera video 
-    for frame in camera.capture_continuous(rawCapture, 
-            format="bgr", use_video_port=True):
-        image = frame.array
-        image = cv2.rectangle(image, (start_x,start_y), (end_x, end_y), (0,0,255), 2)
-        cv2.imshow("Preview", image)
-        key = cv2.waitKey(1) & 0xFF
-        rawCapture.truncate(0)
-        try:
-            therm_cam.plot_update() # update plot
-        except:
-            print('Plot update error') 
-            break
-        if key == ord("q"):
-            break
-    """
-
-
-
-
-
-
-
-
-
+    from camera import VideoCamera
+    camera = cv2.VideoCapture(0)
+    try:
+        print('Starting RPi camera')
+        start_x = 300 
+        start_y = 400
+        end_x = 340
+        end_y = 425 
+        top_cutoff = 0
+        bottom_cutoff = 220
+        right_cutoff = 275
+        left_cutoff = 45
+        rpi_width = 1280 
+        rpi_height = 720 
+        forehead = [start_x, start_y, end_x, end_y]
+        therm_cam = thermal_camera( top_cutoff, bottom_cutoff, right_cutoff,
+                left_cutoff, rpi_width, rpi_height )
+        
+        while(1):
+            time.sleep(0.1)
+            _, image = camera.read()
+            person = frame_to_person(image)
+        
+            if person == 0:
+                print("Error")
+            else:
+                therm_cam.get_temp(person)
+                cv2.putText(person.frame, str(person.temperature), (10,100),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+                cv2.imshow("Image", person.frame)
+                cv2.waitKey(10)
+    finally:
+        print ("releasing camera")
+        camera.release()
