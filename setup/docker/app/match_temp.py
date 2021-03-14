@@ -24,7 +24,7 @@ class thermal_camera:
     mlx_interp_val = 10
 
     
-    def __init__(self, top_cutoff, bottom_cutoff, right_cutoff, left_cutoff, rpi_width, rpi_height):
+    def __init__(self, top_cutoff, bottom_cutoff, right_cutoff, left_cutoff, rpi_width, rpi_height, norm):
 
         load_dotenv()
         self.first_loop = 1
@@ -35,6 +35,7 @@ class thermal_camera:
         self.left_cutoff = int(left_cutoff)
         self.rpi_width = rpi_width 
         self.rpi_height = rpi_height
+        self.norm = norm
 
         # calc the width and height of thermal camera frame
         self.frame_width = self.right_cutoff - self.left_cutoff
@@ -127,11 +128,11 @@ class thermal_camera:
                 same_face_id = x
                 print('Same Face Id: ', same_face_id)
                 print('Norm: ',norm)
-                if norm < 0.23:
+                if norm < self.norm:
                     break
                 x = x+1
 
-        if norm > 0.23:
+        if norm > self.norm:
             print('No match')
             
             # Convert the frame image to a string
@@ -255,11 +256,12 @@ if __name__ == "__main__":
         bottom_cutoff = 220
         right_cutoff = 275
         left_cutoff = 45
-        rpi_width = 1280 
-        rpi_height = 720 
+        rpi_width = 1280
+        rpi_height = 720
+        norm = 0.7
         forehead = [start_x, start_y, end_x, end_y]
         therm_cam = thermal_camera( top_cutoff, bottom_cutoff, right_cutoff,
-                left_cutoff, rpi_width, rpi_height )
+                left_cutoff, rpi_width, rpi_height, norm)
         
         while(1):
             time.sleep(0.1)
