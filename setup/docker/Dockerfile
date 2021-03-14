@@ -6,7 +6,7 @@ ENV LC_ALL C.UTF-8
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONFAULTHANDLER 1
 
-FROM base AS python-deps
+FROM base AS sys-deps
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -40,9 +40,10 @@ RUN apt-get update && \
     python3-dev \
     i2c-tools \
     python3-matplotlib \
-    python3-numpy \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get -y autoremove
+    python3-numpy
+
+RUN rm -rf /var/lib/apt/lists/*
+RUN apt-get -y autoremove
 
 RUN mkdir /wheels
 COPY ./wheels/* /wheels/
@@ -56,6 +57,8 @@ RUN ./check_opencv_version.sh
 COPY install-nginx.sh /
 
 RUN bash /install-nginx.sh
+
+FROM sys-deps as config
 
 # Configure NGINX
 # Remove default configuration from Nginx
