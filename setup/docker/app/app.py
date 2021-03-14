@@ -7,7 +7,7 @@ import threading
 import subprocess
 import socket
 import os
-import dotenv
+from dotenv import load_dotenv
 import cv2
 from imageFaceDetection import frame_to_faceprint
 #not sure if this is what we need...
@@ -96,8 +96,8 @@ def login_postimage(filename):
 
         ret, jpeg_face_login = cv2.imencode('.jpg',face_image)
     
-        jpg_face_login_text = base64.b64encode(jpeg_face_login)
-
+        jpg_face_login_text = base64.b64encode(jpeg_face_login).decode("utf-8")
+        
 
         try:
             cnx = mysql.connector.connect(
@@ -129,7 +129,7 @@ def login_postimage(filename):
                     frame_array = np.frombuffer(frame[0],np.uint8)
                     frame_trans = cv2.imdecode(frame_array,cv2.IMREAD_COLOR)
                     ret, temp1 = cv2.imencode('.jpg',frame_trans)
-                    face = base64.b64encode(temp1)
+                    face = base64.b64encode(temp1).decode("utf-8")
 
 
                 query = '''SELECT time,temp FROM Temps WHERE userId=%s'''
@@ -143,7 +143,7 @@ def login_postimage(filename):
                 file_bytes = np.asarray(bytearray(gram.read()),dtype=np.uint8)
                 img1 = cv2.imdecode(file_bytes,cv2.IMREAD_COLOR)
                 ret, img = cv2.imencode('.jpg',img1)
-                graphic = base64.b64encode(img)
+                graphic = base64.b64encode(img).decode("utf-8")
         except mysql.connector.Error as err:
             error += str(err)
 

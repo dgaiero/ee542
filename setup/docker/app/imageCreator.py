@@ -1,5 +1,8 @@
 #this file contains methods to create timeline images from an array of tuples with (date, temperature)
+import matplotlib
+matplotlib.use("Agg")
 from matplotlib import pyplot as plt
+
 from multiprocessing import Process
 import os
 import io
@@ -12,7 +15,7 @@ def createHistogram(times,temps):
     plt.figure(figsize=[10,8])
     plt.title("user temperature")
     plt.xlabel('Date',fontsize=15)
-    plt.ylabel('Temperature',fontsize=15)
+    plt.ylabel('Temperature (C)',fontsize=15)
     plt.plot(times,temps)
     #save the created plot
     plt.savefig(buf,bbox_inches='tight',format='png')
