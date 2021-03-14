@@ -7,7 +7,7 @@ import threading
 import subprocess
 import socket
 import os
-import dotenv
+from dotenv import load_dotenv
 import cv2
 from imageFaceDetection import frame_to_faceprint
 #not sure if this is what we need...
