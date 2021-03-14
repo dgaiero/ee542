@@ -57,7 +57,7 @@ class thermal_camera:
                     database=os.getenv("SQL_DATABASE"), host=os.getenv("SQL_HOST"))
             self.cursor = self.connection.cursor()
             self.cursor.execute("CREATE TABLE IF NOT EXISTS Users( face_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
-                    "face_print BLOB, frame BLOB) ") 
+                    "face_print MEDIUMBLOB, frame MEDIUMBLOB) ") 
             self.cursor.execute("CREATE TABLE IF NOT EXISTS Temps( temp_num INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
                     "userId INT UNSIGNED , time DATETIME, temp INT UNSIGNED,"
                     "FOREIGN KEY (userId) REFERENCES Users (face_id) ON DELETE CASCADE )")
