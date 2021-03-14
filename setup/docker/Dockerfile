@@ -6,7 +6,7 @@ ENV LC_ALL C.UTF-8
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONFAULTHANDLER 1
 
-FROM base AS python-deps
+FROM base AS sys-deps
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -25,7 +25,11 @@ RUN apt-get update && \
     libtiff-dev \
     libavformat-dev \
     libpq-dev \
+    libopenblas-dev \
+    liblas-dev \
     libssl-dev \
+    libgtk-3-0 \
+    libgtk-3-dev \
     libavcodec-dev \
     libv4l-dev \
     libblas-dev \
@@ -36,17 +40,25 @@ RUN apt-get update && \
     python3-dev \
     i2c-tools \
     python3-matplotlib \
-    python3-numpy \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get -y autoremove
+    python3-numpy
 
-RUN pip install opencv-python uwsgi
+RUN rm -rf /var/lib/apt/lists/*
+RUN apt-get -y autoremove
+
+RUN mkdir /wheels
+COPY ./wheels/* /wheels/
+
+RUN pip install /wheels/*.whl
+
+RUN pip install uwsgi
 COPY check_opencv_version.sh check_opencv_version.sh
 RUN ./check_opencv_version.sh
 
 COPY install-nginx.sh /
 
 RUN bash /install-nginx.sh
+
+FROM sys-deps as config
 
 # Configure NGINX
 # Remove default configuration from Nginx
@@ -97,11 +109,11 @@ ENV STATIC_PATH /app/static
 
 ENV STATIC_INDEX 0
 
-ARG PUID
-ARG PGID
-ARG I2C_GID
+# ARG PUID
+# ARG PGID
+# ARG I2C_GID
 
-RUN groupadd -r -g $PGID frfts && useradd -u $PUID -r -s /bin/false -g frfts frfts
+# RUN groupadd -r -g $PGID frfts && useradd -u $PUID -r -s /bin/false -g frfts frfts
 # RUN groupadd -r -g $I2C_GID i2c
 # RUN usermod -a -G i2c frfts
 
@@ -111,20 +123,21 @@ RUN groupadd -r -g $PGID frfts && useradd -u $PUID -r -s /bin/false -g frfts frf
 COPY ./requirements.txt /requirements.txt
 RUN pip install -r requirements.txt
 
-COPY ./app /app
-
-RUN chown -R frfts:frfts /app
-USER frfts
-ENV PYTHONPATH=/app
-WORKDIR /app
-
-# Move the base entrypoint to reuse it
-RUN mv /entrypoint.sh /uwsgi-nginx-entrypoint.sh
+COPY ./uwsgi-nginx-entrypoint.sh /uwsgi-nginx-entrypoint.sh
+RUN chmod +x /uwsgi-nginx-entrypoint.sh
 # Copy the entrypoint that will generate Nginx additional configs
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+RUN /entrypoint.sh
 
-ENTRYPOINT ["/entrypoint.sh"]
+# ENTRYPOINT ["/entrypoint.sh"]
+
+COPY ./app /app
+
+# RUN chown -R frfts:frfts /app
+# USER frfts
+ENV PYTHONPATH=/app
+WORKDIR /app
 
 CMD ["/start.sh"]
 # ENTRYPOINT ["python", "app.py"]
