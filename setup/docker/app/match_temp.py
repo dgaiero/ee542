@@ -60,7 +60,7 @@ class thermal_camera:
             self.cursor.execute("CREATE TABLE IF NOT EXISTS Users( face_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
                     "face_print MEDIUMBLOB, frame MEDIUMBLOB) ") 
             self.cursor.execute("CREATE TABLE IF NOT EXISTS Temps( temp_num INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
-                    "userId INT UNSIGNED , time DATETIME, temp INT UNSIGNED,"
+                    "userId INT UNSIGNED , time DATETIME, temp FLOAT,"
                     "FOREIGN KEY (userId) REFERENCES Users (face_id) ON DELETE CASCADE )")
         except mariadb.Error as e:
             print(f"Error connecting to MariaDB Platform: {e}")
@@ -87,6 +87,7 @@ class thermal_camera:
         temp = np.mean(forehead_array)
         print('Average forehead temp: {0:2.1f}C ({1:2.1f}F)'.\
                 format(temp, ((9.0/5.0)*temp+32.0)))
+        person.temperature = temp
         
         # Format the date
         formatted_date = datetime.now() 
@@ -225,6 +226,7 @@ def frame_to_person(frame_array):
         return 0
     face = faces[0]
     for (x,y,w,h) in faces:
+        face_crop = frame_array[face[1]:face[1] + face[3], face[0]:face[0] + face[2], :].copy()
         cv2.rectangle(frame_array, (x,y), (x+w,y+h), (0,0,255), 3)
         start_x = x + w//4
         start_y = y + h//8
@@ -235,17 +237,18 @@ def frame_to_person(frame_array):
         t = time.ctime(time.time())
         cv2.putText(frame_array, t, (10,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
         face_net = cv2.dnn.readNetFromCaffe('bvlc_googlenet.prototxt','bvlc_googlenet.caffemodel')
-        face_crop = frame_array[face[1]:face[1] + face[3], face[0]:face[0] + face[2], :]
+        #face_crop = frame_array[face[1]:face[1] + face[3], face[0]:face[0] + face[2], :]
         face_blob = cv2.dnn.blobFromImage(face_crop,1,(224,224))
         face_net.setInput(face_blob)
 #        face_print = np.linalg.norm(face_net.forward()[0])
         face_print = face_net.forward()
-        person = user(face_print, forehead, 0, frame_array, t)
+        person = user(face_print, forehead, 0, face_crop, t)
         return person
 
 if __name__ == "__main__":
-    from camera import VideoCamera
+    #from camera import VideoCamera
     camera = cv2.VideoCapture(0)
+
     try:
         print('Starting RPi camera')
         start_x = 300 

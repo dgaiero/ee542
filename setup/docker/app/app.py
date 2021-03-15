@@ -115,11 +115,12 @@ def login_postimage(filename):
                 fp = cv2.imdecode(fp_array,cv2.IMREAD_GRAYSCALE)
                 norm = np.linalg.norm(face_print-fp)
                 #error+="norm= "+str(norm)
-                if norm<0.23 or True:
+                if norm<0.7:
                     face_id = face_id_remote
                     break
 
-
+            if face_id==-1:
+                error +="Not found. norm: " + str(norm)
             if face_id!=-1:
                 #then we are logged in...
                 #error += "logged in"
