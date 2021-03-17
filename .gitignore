@@ -201,7 +201,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+*.env
 .venv
 env/
 venv/
@@ -300,3 +300,4 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,linux,vscode,python,visualstudiocode,vim,emacs
 sensorData.json
 *log.*
+database/*

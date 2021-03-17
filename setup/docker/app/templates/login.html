@@ -1,0 +1,23 @@
+<html>
+	<head>
+		<title>Facial Recognition Temperature Sensing</title>
+	</head>
+	<body>
+		<h1>FRFTS</h1>
+		<p>Facial Recognition Forehead Temperature Sensor</p>
+
+		<h3>Welcome:</h3>
+		<img src="data:image/jpeg;charset=utf-8;base64, {{photo}}" height="200px">
+		{% if error!="" %}
+		<h3>Error:</h3>
+		<div> {{error}}</div>
+		{% else %}
+		<div>
+			<h3>stored data:</h3>
+			<img src="data:image/jpeg;charset=utf-8;base64, {{face}}" height="200px">
+			<img src="data:image/jpeg;charset=utf-8;base64, {{graphic}}" height="500px">
+		</div>
+		{%endif%}
+	</body>
+</html>
+
